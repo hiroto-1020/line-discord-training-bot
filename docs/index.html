@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>トレーニング履歴ページへ移動中</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      padding: 24px;
+      line-height: 1.7;
+      color: #222;
+    }
+    .box {
+      max-width: 520px;
+      margin: 80px auto;
+      text-align: center;
+    }
+    a {
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>トレーニング履歴ページへ移動中です💪</h2>
+    <p>数秒たっても移動しない場合は、下のリンクを押してください。</p>
+    <p><a id="link" href="#">履歴ページを開く</a></p>
+  </div>
+
+  <script>
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwE5yxyeZM47S_gF9_cMlphjokPCM5FuX0ZVNqMwi8kFK6PItSJit6Uvd6zkFvM-salJg/exec";
+
+    const params = new URLSearchParams(window.location.search);
+    const key = params.get("key") || "";
+
+    const targetUrl = GAS_URL + "?key=" + encodeURIComponent(key);
+
+    const link = document.getElementById("link");
+    link.href = targetUrl;
+
+    if (key) {
+      window.location.replace(targetUrl);
+    } else {
+      document.querySelector(".box").innerHTML = `
+        <h2>履歴キーが見つかりません</h2>
+        <p>LINEで送られたURLが正しいか確認してください。</p>
+      `;
+    }
+  </script>
+</body>
+</html>
