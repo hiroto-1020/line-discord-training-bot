@@ -1,15 +1,20 @@
-require('dotenv').config();
+require("dotenv").config();
 
-const axios = require('axios');
+const axios = require("axios");
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
-const DISCORD_CATEGORY_ID = process.env.DISCORD_CATEGORY_ID || '';
+const DISCORD_CATEGORY_ID = process.env.DISCORD_CATEGORY_ID || "";
 const GAS_WEB_APP_URL = process.env.GAS_WEB_APP_URL;
 const GAS_SECRET_KEY = process.env.GAS_SECRET_KEY;
 
-if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID || !GAS_WEB_APP_URL || !GAS_SECRET_KEY) {
-  console.error('必要な環境変数が不足しています。');
+if (
+  !DISCORD_BOT_TOKEN ||
+  !DISCORD_GUILD_ID ||
+  !GAS_WEB_APP_URL ||
+  !GAS_SECRET_KEY
+) {
+  console.error("必要な環境変数が不足しています。");
   console.error({
     hasDiscordBotToken: Boolean(DISCORD_BOT_TOKEN),
     hasDiscordGuildId: Boolean(DISCORD_GUILD_ID),
@@ -20,13 +25,14 @@ if (!DISCORD_BOT_TOKEN || !DISCORD_GUILD_ID || !GAS_WEB_APP_URL || !GAS_SECRET_K
 }
 
 const discordHeaders = {
-  Authorization: `Bot ${DISCORD_BOT_TOKEN.replace(/^Bot\s+/i, '').trim()}`,
-  'User-Agent': 'DiscordBot (https://github.com/hiroto-1020/line-discord-training-bot, 1.0)',
-  Accept: 'application/json',
+  Authorization: `Bot ${DISCORD_BOT_TOKEN.replace(/^Bot\s+/i, "").trim()}`,
+  "User-Agent":
+    "DiscordBot (https://github.com/hiroto-1020/line-discord-training-bot, 1.0)",
+  Accept: "application/json",
 };
 
 async function main() {
-  console.log('Discord同期開始');
+  console.log("Discord同期開始");
 
   const channels = await fetchDiscordChannels();
 
@@ -35,7 +41,7 @@ async function main() {
     if (!isTextChannel) return false;
 
     if (DISCORD_CATEGORY_ID) {
-      return String(channel.parent_id || '') === String(DISCORD_CATEGORY_ID);
+      return String(channel.parent_id || "") === String(DISCORD_CATEGORY_ID);
     }
 
     return true;
@@ -64,7 +70,7 @@ async function main() {
       }
 
       const content = String(message.content).trim();
-      const firstLine = content.split('\n')[0].trim();
+      const firstLine = content.split("\n")[0].trim();
 
       if (!isDateLine(firstLine)) {
         skippedCount++;
@@ -74,7 +80,7 @@ async function main() {
       const payload = {
         secret: GAS_SECRET_KEY,
         discord_channel_id: String(channel.id),
-        discord_channel_name: String(channel.name || '未登録'),
+        discord_channel_name: String(channel.name || "未登録"),
         message_id: String(message.id),
         content,
         created_at: message.timestamp || new Date().toISOString(),
@@ -87,12 +93,16 @@ async function main() {
         console.log(`保存成功: ${channel.name} / ${firstLine}`);
       } else {
         skippedCount++;
-        console.log(`スキップ: ${channel.name} / ${firstLine} / ${result.reason || result.error || 'unknown'}`);
+        console.log(
+          `スキップ: ${channel.name} / ${firstLine} / ${result.reason || result.error || "unknown"}`,
+        );
       }
     }
   }
 
-  console.log(`Discord同期完了: 保存 ${postedCount}件 / スキップ ${skippedCount}件`);
+  console.log(
+    `Discord同期完了: 保存 ${postedCount}件 / スキップ ${skippedCount}件`,
+  );
 }
 
 async function fetchDiscordChannels() {
@@ -118,32 +128,42 @@ async function fetchDiscordMessages(channelId, limit = 30) {
     const status = error.response?.status;
     const data = error.response?.data;
 
-    console.log(`メッセージ取得失敗: channel=${channelId} status=${status}`, data);
+    console.log(
+      `メッセージ取得失敗: channel=${channelId} status=${status}`,
+      data,
+    );
     return [];
   }
 }
 
 async function postToGas(payload) {
-  const response = await axios.post(GAS_WEB_APP_URL, payload, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    timeout: 30000,
-  });
+  try {
+    const response = await axios.post(GAS_WEB_APP_URL, payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      timeout: 120000,
+    });
 
-  return response.data;
+    return response.data;
+  } catch (error) {
+    return {
+      ok: false,
+      error: error.response?.data || error.message || "GAS request failed",
+    };
+  }
 }
 
 function isDateLine(text) {
-  const normalized = String(text || '')
-    .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
-    .replace(/／/g, '/')
+  const normalized = String(text || "")
+    .replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xfee0))
+    .replace(/／/g, "/")
     .trim();
 
   return /^(\d{1,2})[\/月](\d{1,2})日?$/.test(normalized);
 }
 
 main().catch((error) => {
-  console.error('同期エラー:', error.response?.data || error.message);
+  console.error("同期エラー:", error.response?.data || error.message);
   process.exit(1);
 });
